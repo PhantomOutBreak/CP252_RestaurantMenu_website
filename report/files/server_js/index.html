@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Plato - server.js</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="">
+  <meta name="author" content="">
+
+  <!--[if lt IE 9]>
+  <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+  <![endif]-->
+
+  <link href="../../assets/css/vendor/morris.css" rel="stylesheet">
+  <link href="../../assets/css/vendor/bootstrap.css" rel="stylesheet">
+  <link href="../../assets/css/vendor/font-awesome.css" rel="stylesheet">
+  <link href="../../assets/css/vendor/codemirror.css" rel="stylesheet">
+  <link href="../../assets/css/plato.css" rel="stylesheet">
+  <link href="../../assets/css/plato-file.css" rel="stylesheet">
+
+</head>
+
+<body>
+
+<div class="navbar navbar-fixed-top">
+  <div class="container">
+    <a class="navbar-brand" href="http://github.com/es-analysis/plato">Plato on Github</a>
+    <ul class="nav navbar-nav">
+      <li>
+        <a href="../../index.html">Report Home</a>
+      </li>
+    </ul>
+  </div>
+</div>
+
+<div class="jumbotron">
+  <div class="container">
+    <h1>server.js</h1>
+  </div>
+</div>
+
+<div class="container aggregate-stats">
+  <div class="row">
+    <div class="col-md-6">
+      <h2 class="header">Maintainability <a href="http://blogs.msdn.com/b/codeanalysis/archive/2007/11/20/maintainability-index-range-and-meaning.aspx"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="A value between 0 and 100 that represents the relative ease of maintaining the code. A high value means better maintainability." data-original-title="Maintainability Index"  data-container="body"></i></a></h2>
+      <p class="stat">63.84</p>
+    </div>
+    <div class="col-md-6">
+      <h2 class="header">Lines of code <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h2>
+      <p class="stat">381</p>
+    </div>
+  </div>
+  <div class="row historical">
+    <div class="col-md-6">
+      <p id="chart_historical_maint" class="chart"></p>
+    </div>
+    <div class="col-md-6">
+      <p id="chart_historical_sloc" class="chart"></p>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-6">
+      <h2 class="header">Difficulty  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="The difficulty measure is related to the difficulty of the program to write or understand." data-original-title="Difficulty" data-container="body"></i></a></h2>
+      <p class="stat">67.30</p>
+    </div>
+    <div class="col-md-6">
+      <h2 class="header">Estimated Errors  <a href="http://en.wikipedia.org/wiki/Halstead_complexity_measures"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Halstead's delivered bugs is an estimate for the number of errors in the implementation." data-original-title="Delivered Bugs" data-container="body"></i></a></h2>
+      <p class="stat">4.88</p>
+    </div>
+  </div>
+</div>
+
+<div class="container charts">
+  <div class="row">
+    <h2 class="header">Function weight</h2>
+  </div>
+  <div class="row">
+    <div class="col-md-6">
+      <h3 class="chart-header">By Complexity <a href="http://en.wikipedia.org/wiki/Cyclomatic_complexity"><i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="This metric counts the number of distinct paths through a block of code. Lower values are better." data-original-title="Cyclomatic Complexity" data-container="body"></i></a></h3>
+      <div id="fn-by-complexity" class="stat"></div>
+    </div>
+    <div class="col-md-6">
+      <h3 class="chart-header">By SLOC  <i class="icon icon-info-sign" rel="popover" data-placement="top" data-trigger="hover" data-content="Source Lines of Code / Logical Lines of Code" data-original-title="SLOC/LSLOC" data-container="body"></i></h3>
+      <div id="fn-by-sloc" class="stat"></div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="row">
+    <textarea id="file-source" class="col-md-12">const express = require(&#039;express&#039;);
+const bcrypt = require(&#039;bcrypt&#039;);
+const fs = require(&#039;fs/promises&#039;); // ใช้ Promises API แทน callback
+const path = require(&#039;path&#039;);
+const session = require(&#039;express-session&#039;);
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// กำหนดตำแหน่งไฟล์ JSON
+const usersPath = path.join(__dirname, &#039;controllers&#039;, &#039;users.json&#039;);
+
+// **Middleware**
+app.use(express.json());  // ใช้ express.json() เพื่อ parse JSON ใน request body
+app.use(express.urlencoded({ extended: true }));  // ใช้ express.urlencoded() เพื่อ parse ข้อมูลจากฟอร์ม
+// ตั้งค่าการใช้ EJS และ Static Files
+app.set(&#039;view engine&#039;, &#039;ejs&#039;);
+app.use(express.static(&#039;public&#039;));
+// ตั้งค่า Session
+app.use(session({
+    secret: process.env.SESSION_SECRET || &#039;your-secret-key&#039;,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        secure: process.env.NODE_ENV === &#039;production&#039;, // ใช้ HTTPS ใน production
+        httpOnly: true,
+        sameSite: &#039;strict&#039;
+    }
+}));
+
+// **ฟังก์ชันโหลด/บันทึกผู้ใช้**n
+async function loadUsers() {
+    try {
+        const data = await fs.readFile(usersPath, &#039;utf8&#039;);
+        const parsedData = JSON.parse(data);
+        if (!Array.isArray(parsedData.users)) {
+            throw new Error(&#039;Invalid users.json format&#039;);
+        }
+        parsedData.users.forEach(user =&gt; {
+            if (!user.favorites) user.favorites = [];
+            if (!user.todos) user.todos = [];
+            if (!user.dones) user.dones = [];
+        });
+        return parsedData.users;
+    } catch (err) {
+        if (err.code === &#039;ENOENT&#039;) {
+            const initData = { users: [] };
+            await fs.writeFile(usersPath, JSON.stringify(initData, null, 2));
+            return [];
+        }
+        throw err;
+    }
+}
+
+async function saveUsers(users) {
+    const data = JSON.stringify({ users }, null, 2);
+    try {
+        await fs.writeFile(usersPath, data);
+    } catch (err) {
+        console.error(&#039;Error saving users:&#039;, err);
+        throw err;
+    }
+}
+
+// **Routes ต่างๆ**
+// หน้า Homepage
+app.get(&#039;/homepage&#039;, (req, res) =&gt; {
+    res.render(&#039;homepage&#039;, { session: req.session });
+});
+
+// หน้าลงทะเบียน
+app.get(&#039;/register&#039;, (req, res) =&gt; {
+    res.render(&#039;register&#039;, {
+        error: req.session.error,
+        success: req.session.success
+    });
+});
+
+// ลงทะเบียนผู้ใช้
+app.post(&#039;/register&#039;, async (req, res) =&gt; {
+    const { email, username, password } = req.body;
+    try {
+        const users = await loadUsers();
+        if (!email || !username || !password) {
+            req.session.error = &#039;กรุณากรอกข้อมูลให้ครบ&#039;;
+            return res.redirect(&#039;/register&#039;);
+        }
+        const existingUser = users.find(u =&gt; 
+            u.email.toLowerCase() === email.toLowerCase() || 
+            u.username.toLowerCase() === username.toLowerCase()
+        );
+        if (existingUser) {
+            req.session.error = &#039;อีเมลหรือชื่อผู้ใช้ถูกใช้แล้ว&#039;;
+            return res.redirect(&#039;/register&#039;);
+        }
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const newUser = {
+            id: users.length + 1,
+            email: email.trim().toLowerCase(),
+            username: username.trim(),
+            password: hashedPassword,
+            favorites: [],
+            todos: [],
+            dones: [],
+            createdAt: new Date().toISOString()
+        };
+        users.push(newUser);
+        await saveUsers(users);
+        delete req.session.success;
+        res.redirect(&#039;/login&#039;);
+    } catch (err) {
+        console.error(&#039;Error registering:&#039;, err);
+        req.session.error = &#039;เกิดข้อผิดพลาดในการลงทะเบียน&#039;;
+        res.redirect(&#039;/register&#039;);
+    }
+});
+
+// หน้าล็อกอิน
+app.get(&#039;/login&#039;, (req, res) =&gt; {
+    res.render(&#039;login&#039;, {
+        error: req.session.error,
+        success: req.session.success
+    });
+});
+
+// ล็อกอิน
+app.post(&#039;/login&#039;, async (req, res) =&gt; {
+    const { email, password } = req.body;
+    try {
+        const users = await loadUsers();
+        const user = users.find(u =&gt; u.email.toLowerCase() === email.toLowerCase());
+        if (!user) {
+            req.session.error = &#039;อีเมลไม่ถูกต้อง&#039;;
+            return res.redirect(&#039;/login&#039;);
+        }
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            req.session.error = &#039;พาสเวิร์ดผิด&#039;;
+            return res.redirect(&#039;/login&#039;);
+        }
+        req.session.user = {
+            id: user.id,
+            email: user.email,
+            username: user.username,
+            favorites: user.favorites,
+            todos: user.todos,
+            dones: user.dones,
+            createdAt: user.createdAt
+        };
+        delete req.session.error;
+        res.redirect(&#039;/menu&#039;);
+    } catch (err) {
+        console.error(&#039;Error logging in:&#039;, err);
+        req.session.error = &#039;เกิดข้อผิดพลาดในการเข้าสู่ระบบ&#039;;
+        res.redirect(&#039;/login&#039;);
+    }
+});
+
+// หน้าเมนูหลัก
+app.get(&#039;/menu&#039;, async (req, res) =&gt; {
+    if (!req.session.user || !req.session.user.id) {
+        req.session.error = &#039;กรุณาเข้าสู่ระบบ&#039;;
+        return res.redirect(&#039;/login&#039;);
+    }
+    try {
+        const users = await loadUsers();
+        const user = users.find(u =&gt; u.id === req.session.user.id);
+        if (!user) {
+            req.session.error = &#039;ผู้ใช้ไม่พบ&#039;;
+            return res.redirect(&#039;/login&#039;);
+        }
+        // อัปเดตข้อมูลผู้ใช้ล่าสุดใน Session
+        req.session.user = user;
+        res.render(&#039;menu&#039;, { user });
+    } catch (err) {
+        console.error(&#039;Error fetching user:&#039;, err);
+        req.session.error = &#039;เกิดข้อผิดพลาด&#039;;
+        res.redirect(&#039;/login&#039;);
+    }
+});
+
+// API เพิ่ม/ลบรายการโปรด
+app.put(&#039;/api/favorites&#039;, async (req, res) =&gt; {
+    if (!req.session.user || !req.session.user.id) {
+        return res.status(401).json({ error: &#039;กรุณาเข้าสู่ระบบ&#039; });
+    }
+    const { menu } = req.body;
+    if (!menu || typeof menu !== &#039;string&#039;) {
+        return res.status(400).json({ error: &#039;เมนูไม่ถูกต้อง&#039; });
+    }
+    try {
+        const users = await loadUsers();
+        const userIndex = users.findIndex(u =&gt; u.id === req.session.user.id);
+        const user = users[userIndex];
+        if (!user) {
+            return res.status(404).json({ error: &#039;ผู้ใช้ไม่พบ&#039; });
+        }
+        // ตรวจสอบ favorites ว่ามีคีย์หรือไม่
+        if (!user.favorites) user.favorites = [];
+        const existingIndex = user.favorites.indexOf(menu);
+        if (existingIndex !== -1) {
+            user.favorites.splice(existingIndex, 1);  // ลบรายการโปรด
+        } else {
+            user.favorites.push(menu);  // เพิ่มรายการโปรด
+        }
+        // บันทึกการเปลี่ยนแปลงในไฟล์
+        await saveUsers(users);
+        // อัปเดตข้อมูลใน Session
+        req.session.user.favorites = user.favorites;
+        // ส่งกลับข้อมูลว่าเพิ่มหรือลบสำเร็จ
+        res.status(200).json({ success: true, favorites: user.favorites });
+    } catch (err) {
+        console.error(&#039;Error updating favorites:&#039;, err);
+        res.status(500).json({ error: &#039;เกิดข้อผิดพลาด&#039; });
+    }
+});
+
+// API ดึงรายการโปรดของผู้ใช้ที่ล็อกอินอยู่
+app.get(&#039;/api/favorites&#039;, (req, res) =&gt; {
+    if (!req.session.user || !req.session.user.id) {
+        return res.status(401).json({ error: &#039;กรุณาเข้าสู่ระบบ&#039; });
+    }
+    const user = req.session.user;
+    res.status(200).json({ favorites: user.favorites });
+});
+
+// API เพิ่ม/ลบ To-Do
+app.put(&#039;/api/todo&#039;, async (req, res) =&gt; {
+    if (!req.session.user || !req.session.user.id) {
+        return res.status(401).json({ error: &#039;กรุณาเข้าสู่ระบบ&#039; });
+    }
+    const { menu } = req.body;
+    if (!menu || typeof menu !== &#039;string&#039;) {
+        return res.status(400).json({ error: &#039;เมนูไม่ถูกต้อง&#039; });
+    }
+    try {
+        const users = await loadUsers();
+        const userIndex = users.findIndex(u =&gt; u.id === req.session.user.id);
+        const user = users[userIndex];
+        if (!user) {
+            return res.status(404).json({ error: &#039;ผู้ใช้ไม่พบ&#039; });
+        }
+        // ตรวจสอบ todos ว่ามีคีย์หรือไม่
+        if (!user.todos) user.todos = [];
+        const existingTodoIndex = user.todos.indexOf(menu);
+        if (existingTodoIndex !== -1) {
+            user.todos.splice(existingTodoIndex, 1);  // ลบ To-Do
+        } else {
+            user.todos.push(menu);  // เพิ่ม To-Do
+        }
+        // บันทึกการเปลี่ยนแปลงในไฟล์
+        await saveUsers(users);
+        // อัปเดตข้อมูลใน Session
+        req.session.user.todos = user.todos;
+        // ส่งกลับข้อมูลว่าเพิ่มหรือลบสำเร็จ
+        res.status(200).json({ success: true, todos: user.todos });
+    } catch (err) {
+        console.error(&#039;Error updating todo:&#039;, err);
+        res.status(500).json({ error: &#039;เกิดข้อผิดพลาด&#039; });
+    }
+});
+
+// API ดึง To-Do List
+app.get(&#039;/api/todo&#039;, async (req, res) =&gt; {
+    if (!req.session.user || !req.session.user.id) {
+        return res.status(401).json({ error: &#039;กรุณาเข้าสู่ระบบ&#039; });
+    }
+    const user = req.session.user;
+    res.status(200).json({ todos: user.todos });
+});
+
+// API ลบ To-Do แล้วทำเสร็จแล้ว
+app.delete(&#039;/api/todo/:menu&#039;, async (req, res) =&gt; {
+    if (!req.session.user || !req.session.user.id) {
+        return res.status(401).json({ error: &#039;กรุณาเข้าสู่ระบบ&#039; });
+    }
+    const menuName = req.params.menu;
+    try {
+        const users = await loadUsers();
+        const userIndex = users.findIndex(u =&gt; u.id === req.session.user.id);
+        const user = users[userIndex];
+        if (!user) {
+            return res.status(404).json({ error: &#039;ผู้ใช้ไม่พบ&#039; });
+        }
+        // ตรวจสอบว่าเมนูนี้อยู่ใน To-Do
+        const todoIndex = user.todos.indexOf(menuName);
+        if (todoIndex === -1) {
+            return res.status(400).json({ error: &#039;เมนูไม่มีใน To-Do&#039; });
+        }
+        user.dones.push(user.todos[todoIndex]); // ย้ายไปยัง Done
+        user.todos.splice(todoIndex, 1); // ลบออกจาก To-Do
+        // บันทึกการเปลี่ยนแปลงในไฟล์
+        await saveUsers(users);
+        // อัปเดตข้อมูลใน Session
+        req.session.user.todos = user.todos;
+        req.session.user.dones = user.dones;
+        res.status(200).json({ success: true, dones: user.dones });
+    } catch (err) {
+        console.error(&#039;Error marking as done:&#039;, err);
+        res.status(500).json({ error: &#039;เกิดข้อผิดพลาด&#039; });
+    }
+});
+
+// API ดึง Done List
+app.get(&#039;/api/done&#039;, async (req, res) =&gt; {
+    if (!req.session.user || !req.session.user.id) {
+        return res.status(401).json({ error: &#039;กรุณาเข้าสู่ระบบ&#039; });
+    }
+    const user = req.session.user;
+    res.status(200).json({ dones: user.dones });
+});
+
+// หน้าผัดกระเพรา
+app.get(&#039;/pad-krapow&#039;, async (req, res) =&gt; {
+    if (!req.session.user) return res.redirect(&#039;/login&#039;);
+    res.render(&#039;pad-krapow&#039;, { user: req.session.user });
+});
+
+// หน้าแกงเขียวหวานไก่
+app.get(&#039;/green-curry&#039;, async (req, res) =&gt; {
+    if (!req.session.user) return res.redirect(&#039;/login&#039;);
+    res.render(&#039;green-curry&#039;, { user: req.session.user });
+});
+
+// หน้าต้มยำกุ้ง
+app.get(&#039;/tom-yum&#039;, async (req, res) =&gt; {
+    if (!req.session.user) return res.redirect(&#039;/login&#039;);
+    res.render(&#039;tom-yum&#039;, { user: req.session.user });
+});
+
+// หน้าน้ำพริกอ่อง
+app.get(&#039;/nam-prik-ong&#039;, async (req, res) =&gt; {
+    if (!req.session.user) return res.redirect(&#039;/login&#039;);
+    res.render(&#039;nam-prik-ong&#039;, { user: req.session.user });
+});
+
+// หน้าหลัก
+app.get(&#039;/&#039;, (req, res) =&gt; res.redirect(&#039;/homepage&#039;));
+
+// หน้า Logout
+app.get(&#039;/logout&#039;, (req, res) =&gt; {
+    req.session.destroy(err =&gt; {
+        if (err) {
+            console.error(&#039;Error destroying session:&#039;, err);
+            return res.redirect(&#039;/login&#039;);
+        }
+        res.redirect(&#039;/homepage&#039;);
+    });
+});
+
+// จัดการข้อผิดพลาด Session
+app.use((req, res, next) =&gt; {
+    if (req.session.error) {
+        res.locals.error = req.session.error;
+        delete req.session.error;
+    }
+    if (req.session.success) {
+        res.locals.success = req.session.success;
+        delete req.session.success;
+    }
+    next();
+});
+
+// Error Handling
+app.use((req, res, next) =&gt; {
+    res.status(404).render(&#039;404&#039;, { url: req.url });
+});
+app.use((err, req, res, next) =&gt; {
+    console.error(&#039;Error:&#039;, err.stack);
+    res.status(500).render(&#039;500&#039;, { error: err.message });
+});
+
+// Export the app for testing
+module.exports = app;
+
+// Start the server only if not in a test environment
+if (require.main === module) {
+    app.listen(PORT, () =&gt; {
+        console.log(`Server is running on http://localhost:${PORT}`);
+    });
+}</textarea>
+  </div>
+</div>
+
+<footer class="footer">
+  <div class="container">
+    <p>.</p>
+  </div>
+</footer>
+
+<script type="text/html" id="complexity-popover-template">
+  <div class="complexity-notice">
+    Complexity : {{ cyclomatic }} <br>
+    Length : {{ halstead.length }} <br>
+    Difficulty : {{ halstead.difficulty.toFixed(2) }} <br>
+    Est # bugs : {{ halstead.bugs.toFixed(2) }}<br>
+  </div>
+</script>
+
+<script type="text/javascript" src="../../assets/scripts/bundles/core-bundle.js"></script>
+<script type="text/javascript" src="../../assets/scripts/bundles/codemirror.js"></script>
+<script type="text/javascript" src="../../assets/scripts/codemirror.markpopovertext.js"></script>
+<script type="text/javascript" src="report.js"></script>
+<script type="text/javascript" src="report.history.js"></script>
+<script type="text/javascript" src="../../assets/scripts/plato-file.js"></script>
+</body>
+</html>

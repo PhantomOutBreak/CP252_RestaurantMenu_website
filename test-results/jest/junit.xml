@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="jest tests" tests="13" failures="0" errors="0" time="9.734">
+  <testsuite name="UserData" errors="0" failures="0" skipped="0" timestamp="2025-04-24T16:38:07" time="0.549" tests="7">
+    <testcase classname="UserData should handle constructor and loadUsers scenarios" name="UserData should handle constructor and loadUsers scenarios" time="0.011">
+    </testcase>
+    <testcase classname="UserData should handle saveUsers scenarios" name="UserData should handle saveUsers scenarios" time="0.01">
+    </testcase>
+    <testcase classname="UserData should handle addNewUser scenarios" name="UserData should handle addNewUser scenarios" time="0.004">
+    </testcase>
+    <testcase classname="UserData should handle toggleFavorite, toggleTodo, and markAsDone scenarios" name="UserData should handle toggleFavorite, toggleTodo, and markAsDone scenarios" time="0.006">
+    </testcase>
+    <testcase classname="UserData should handle errors for toggleFavorite, toggleTodo, and markAsDone" name="UserData should handle errors for toggleFavorite, toggleTodo, and markAsDone" time="0.004">
+    </testcase>
+    <testcase classname="UserData should handle getUserById and authenticateUser scenarios" name="UserData should handle getUserById and authenticateUser scenarios" time="0.001">
+    </testcase>
+    <testcase classname="UserData should handle User class scenarios" name="UserData should handle User class scenarios" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="UI Testing" errors="0" failures="0" skipped="0" timestamp="2025-04-24T16:38:07" time="9.383" tests="6">
+    <testcase classname="UI Testing 1. หน้า Homepage แสดงปกติ" name="UI Testing 1. หน้า Homepage แสดงปกติ" time="0.17">
+    </testcase>
+    <testcase classname="UI Testing 2. หน้าลงทะเบียนแสดงฟอร์มและข้อความแนะนำ" name="UI Testing 2. หน้าลงทะเบียนแสดงฟอร์มและข้อความแนะนำ" time="0.104">
+    </testcase>
+    <testcase classname="UI Testing 3. ล็อกอินสำเร็จและเข้าสู่หน้าเมนู" name="UI Testing 3. ล็อกอินสำเร็จและเข้าสู่หน้าเมนู" time="0.646">
+    </testcase>
+    <testcase classname="UI Testing 4. เพิ่มรายการโปรดและตรวจสอบการแสดงผล" name="UI Testing 4. เพิ่มรายการโปรดและตรวจสอบการแสดงผล" time="3.575">
+    </testcase>
+    <testcase classname="UI Testing 5. เพิ่ม To-Do และย้ายเป็น Done" name="UI Testing 5. เพิ่ม To-Do และย้ายเป็น Done" time="1.999">
+    </testcase>
+    <testcase classname="UI Testing 6. ออกจากระบบและกลับสู่หน้าหลัก" name="UI Testing 6. ออกจากระบบและกลับสู่หน้าหลัก" time="0.479">
+    </testcase>
+  </testsuite>
+</testsuites>
